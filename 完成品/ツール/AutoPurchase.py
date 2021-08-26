@@ -110,12 +110,6 @@ class AmazonThreading(threading.Thread):
             # 指定されたURLに移動
             driver.get(self.url)
             wait.until(EC.presence_of_all_elements_located)
-            
-            # 最新商品順に並び替え（並び替え選択肢に'最新商品'がなければスキップ）
-            selector = Select(driver.find_element_by_id('s-result-sort-select'))
-            for op in selector.options:
-                if op.text == "最新商品":
-                    selector.select_by_visible_text("最新商品")
         
             # ループ処理
             quit_flg = False
