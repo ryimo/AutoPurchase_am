@@ -82,7 +82,6 @@ class AmazonThreading(threading.Thread):
             if IsHideChrome:
                 options.add_argument('--headless')
             driver = webdriver.Chrome(executable_path=chromDirverPath, chrome_options=options)
-            wait = WebDriverWait(driver, 10)
             
             # [S] Amazonへのログイン
             driver.get("https://www.amazon.co.jp")
@@ -105,12 +104,17 @@ class AmazonThreading(threading.Thread):
                 driver.find_element_by_id('ap-account-fixup-phone-skip-link').Click
 
             # ホーム画面がロードするまで待機（待機しないとURLの移動ができなかったため）
+            # ここだけ待機時間を3分に（ログインBot対策）
+            wait = WebDriverWait(driver, 180)
             wait.until(EC.visibility_of_element_located((By.ID, 'navBackToTop')))
             
+            # ログイン以降は待機時間は10秒に設定
+            wait = WebDriverWait(driver, 10)
+
             # 指定されたURLに移動
             driver.get(self.url)
             wait.until(EC.presence_of_all_elements_located)
-        
+            
             # ループ処理
             quit_flg = False
             while quit_flg == False:
@@ -190,35 +194,29 @@ class AmazonThreading(threading.Thread):
                                                     # 購入履歴を記載
                                                     write_Excel(productNameElementText, price_webPage)                                        
 
-                                            quit_flg = True
-                                    
                                     # 商品ページを閉じる
                                     driver.close()
                                     driver.switch_to.window(driver.window_handles[0]) 
 
-                                    if quit_flg:
-                                        break
 
                 # ループ終了判定
-                if quit_flg == False:
+                LOOP_NUM = 12
+                i = 1
+                # あまり連続して更新をかけると怒られそうなので、1分(5秒×12回)待機
+                while i <= LOOP_NUM:
 
-                    LOOP_NUM = 12
-                    i = 1
-                    # あまり連続して更新をかけると怒られそうなので、1分(5秒×12回)待機
-                    while i <= LOOP_NUM:
+                    # 10秒待機ごとに終了フラグを確認
+                    # エクセルが終了通知用のファイルを作成することで、終了指示を検知する
+                    if(os.path.isfile(os.path.join(ExecDir,'loop_end.txt'))):
+                        quit_flg = True
+                        break
+                    else:
+                        time.sleep(5)
+                        i += 1
 
-                        # 10秒待機ごとに終了フラグを確認
-                        # エクセルが終了通知用のファイルを作成することで、終了指示を検知する
-                        if(os.path.isfile(os.path.join(ExecDir,'loop_end.txt'))):
-                            quit_flg = True
-                            break
-                        else:
-                            time.sleep(5)
-                            i += 1
-
-                    if i > LOOP_NUM:
-                        # 指定されたURLを再ロードして一覧更新
-                            driver.refresh()
+                if i > LOOP_NUM:
+                    # 指定されたURLを再ロードして一覧更新
+                        driver.refresh()
                             
 
         except Exception as e:
