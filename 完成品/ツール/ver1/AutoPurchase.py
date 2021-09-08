@@ -15,6 +15,7 @@ import time
 # グローバル変数
 UserName_amazon = ""
 Password_amazon = ""
+WaitTime = 0
 IsHideChrome = False
 
 # 実行フォルダパスを取得
@@ -200,9 +201,11 @@ class AmazonThreading(threading.Thread):
 
 
                 # ループ終了判定
-                LOOP_NUM = 12
+                LOOP_NUM = 10
                 i = 1
-                # あまり連続して更新をかけると怒られそうなので、1分(5秒×12回)待機
+                waitTime_once = WaitTime / LOOP_NUM
+                # あまり連続して更新をかけると怒られそうなので、指定された秒数待機
+                # 停止フラグの監視をこまめに行うために指定された秒数を10分割して待機する
                 while i <= LOOP_NUM:
 
                     # 10秒待機ごとに終了フラグを確認
@@ -211,7 +214,7 @@ class AmazonThreading(threading.Thread):
                         quit_flg = True
                         break
                     else:
-                        time.sleep(5)
+                        time.sleep(waitTime_once)
                         i += 1
 
                 if i > LOOP_NUM:
@@ -249,8 +252,10 @@ def callFromExcel():
     # Amazonへのログイン情報を取得
     global UserName_amazon
     global Password_amazon
+    global WaitTime
     UserName_amazon = ws.range((9, 3)).value
     Password_amazon = ws.range((10, 3)).value
+    WaitTime = int(ws.range((9, 5)).value)
     
     global IsHideChrome
     if int(ws.range((9, 4)).value) == 2:
